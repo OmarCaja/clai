@@ -1,0 +1,21 @@
+[project]
+name = "clai"
+version = "0.1.0"
+description = "An intelligent command-line assistant built with LangChain agents"
+readme = "README.md"
+authors = [
+    { name = "Omar Caja", email = "omar.caja@hotmail.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "langchain>=1.4.5",
+    "langchain-core>=1.6.10",
+    "langchain-google-genai>=4.4.1",
+]
+
+[project.scripts]
+clai = "clai.cli:main"
+
+[build-system]
+requires = ["uv_build>=0.12.23,<0.13.0"]
+build-backend = "uv_build"
