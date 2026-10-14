@@ -16,4 +16,4 @@ def run_shell_command(command: str) -> str:
         command, shell=True, capture_output=True, text=True, check=False
     )
 
-    return result.stdout + result.stderr
+    return f"exit code: {result.returncode}\n{result.stdout}{result.stderr}"
