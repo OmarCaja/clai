@@ -16,7 +16,7 @@ def main() -> None:
         "-m",
         "--model",
         default=os.environ.get("CLAI_MODEL", DEFAULT_MODEL),
-        help="provider:model to use (default: %(default)s)",
+        help="provider: model to use (default: %(default)s)",
     )
 
     args = parser.parse_args()
