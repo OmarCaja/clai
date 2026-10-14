@@ -23,4 +23,7 @@ def main() -> None:
 
     request = " ".join(args.request)
 
-    print(ask(request, args.model))
+    for chunk in ask(request, args.model):
+        print(chunk, end="", flush=True)
+
+    print()

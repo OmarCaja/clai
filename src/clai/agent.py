@@ -1,4 +1,8 @@
+from collections.abc import Iterator
+from typing import Any, cast
+
 from langchain.agents import create_agent
+from langchain_core.messages import BaseMessage
 from langchain_core.runnables import RunnableConfig
 from langgraph.errors import GraphRecursionError
 
@@ -15,19 +19,35 @@ When you have verified the facts, answer concisely."""
 TOOLS = [run_shell_command]
 RECURSION_LIMIT = 21
 
+# stream_mode="messages" yields (message chunk, metadata) pairs,
+# but LangGraph's type hints don't say so.
+MessageStream = Iterator[tuple[BaseMessage, dict[str, Any]]]
 
-def ask(request: str, model_name: str) -> str:
+
+def ask(request: str, model_name: str) -> Iterator[str]:
     """Answer a natural-language request, running shell commands when needed."""
 
     agent = create_agent(model_name, tools=TOOLS, system_prompt=SYSTEM_PROMPT)
 
-    try:
-        result = agent.invoke(
-            {"messages": [{"role": "user", "content": request}]},
-            RunnableConfig(recursion_limit=RECURSION_LIMIT),
-        )
-    except GraphRecursionError:
-        return f"Stopped after {RECURSION_LIMIT} steps without a final answer."
+    answered = False
 
-    answer = result["messages"][-1].text
-    return answer or "The model returned an empty answer. Try again."
+    try:
+        stream = cast(
+            MessageStream,
+            agent.stream(
+                {"messages": [{"role": "user", "content": request}]},
+                RunnableConfig(recursion_limit=RECURSION_LIMIT),
+                stream_mode="messages",
+            ),
+        )
+        for token, meta in stream:
+            if meta["langgraph_node"] == "model" and token.text:
+                answered = True
+                yield token.text
+
+    except GraphRecursionError:
+        yield f"Stopped after {RECURSION_LIMIT} steps without a final answer."
+        return
+
+    if not answered:
+        yield "The model returned an empty answer. Try again."
