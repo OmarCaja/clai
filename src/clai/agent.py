@@ -1,5 +1,6 @@
-from langchain.chat_models import init_chat_model
-from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
+from langchain.agents import create_agent
+from langchain_core.runnables import RunnableConfig
+from langgraph.errors import GraphRecursionError
 
 from clai.tools import run_shell_command
 
@@ -12,29 +13,21 @@ Never guess about something you can check: if you need a file's contents, read i
 Never ask the user to run commands; run them yourself.
 When you have verified the facts, answer concisely."""
 TOOLS = [run_shell_command]
-TOOLS_BY_NAME = {tool.name: tool for tool in TOOLS}
-MAX_STEPS = 10
+RECURSION_LIMIT = 21
 
 
 def ask(request: str, model_name: str) -> str:
     """Answer a natural-language request, running shell commands when needed."""
 
-    model = init_chat_model(model=model_name).bind_tools(TOOLS)
+    agent = create_agent(model_name, tools=TOOLS, system_prompt=SYSTEM_PROMPT)
 
-    conversation: list[BaseMessage] = [
-        SystemMessage(SYSTEM_PROMPT),
-        HumanMessage(request),
-    ]
+    try:
+        result = agent.invoke(
+            {"messages": [{"role": "user", "content": request}]},
+            RunnableConfig(recursion_limit=RECURSION_LIMIT),
+        )
+    except GraphRecursionError:
+        return f"Stopped after {RECURSION_LIMIT} steps without a final answer."
 
-    for _ in range(MAX_STEPS):
-        response = model.invoke(conversation)
-        conversation.append(response)
-
-        if not response.tool_calls:
-            return response.text or "The model returned an empty answer. Try again."
-
-        for tool_call in response.tool_calls:
-            tool = TOOLS_BY_NAME[tool_call["name"]]
-            conversation.append(tool.invoke(tool_call))
-
-    return f"Stopped after {MAX_STEPS} steps without a final answer."
+    answer = result["messages"][-1].text
+    return answer or "The model returned an empty answer. Try again."
