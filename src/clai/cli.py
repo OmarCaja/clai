@@ -2,6 +2,7 @@ import argparse
 import os
 
 from clai.agent import ask
+from clai.safety import is_read_only
 
 DEFAULT_MODEL = "google_genai:gemini-2.5-flash-lite"
 
@@ -9,6 +10,13 @@ DEFAULT_MODEL = "google_genai:gemini-2.5-flash-lite"
 def ask_user(command: str) -> bool:
     answer = input(f"$ {command}\nRun this command? [y/N] ")
     return answer.strip().lower() == "y"
+
+
+def confirm(command: str) -> bool:
+    if is_read_only(command):
+        print(f"$ {command} (auto-approved)")
+        return True
+    return ask_user(command)
 
 
 def main() -> None:
@@ -28,7 +36,7 @@ def main() -> None:
 
     request = " ".join(args.request)
 
-    for chunk in ask(request, args.model, ask_user):
+    for chunk in ask(request, args.model, confirm):
         print(chunk, end="", flush=True)
 
     print()
