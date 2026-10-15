@@ -4,7 +4,9 @@ from typing import Any, cast
 from langchain.agents import create_agent
 from langchain_core.messages import BaseMessage
 from langchain_core.runnables import RunnableConfig
+from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.errors import GraphRecursionError
+from langgraph.graph.state import CompiledStateGraph
 
 from clai.tools import make_run_shell_command
 
@@ -23,12 +25,18 @@ RECURSION_LIMIT = 21
 MessageStream = Iterator[tuple[BaseMessage, dict[str, Any]]]
 
 
-def ask(request: str, model_name: str, confirm: Callable[[str], bool]) -> Iterator[str]:
-    """Answer a natural-language request, running shell commands when needed."""
-
-    agent = create_agent(
-        model_name, tools=[make_run_shell_command(confirm)], system_prompt=SYSTEM_PROMPT
+def make_agent(model_name: str, confirm: Callable[[str], bool]) -> CompiledStateGraph:
+    """Create an agent that can run shell commands."""
+    return create_agent(
+        model_name,
+        tools=[make_run_shell_command(confirm)],
+        system_prompt=SYSTEM_PROMPT,
+        checkpointer=InMemorySaver(),
     )
+
+
+def ask(agent: CompiledStateGraph, request: str) -> Iterator[str]:
+    """Answer a natural-language request, running shell commands when needed."""
 
     answered = False
 
@@ -37,7 +45,9 @@ def ask(request: str, model_name: str, confirm: Callable[[str], bool]) -> Iterat
             MessageStream,
             agent.stream(
                 {"messages": [{"role": "user", "content": request}]},
-                RunnableConfig(recursion_limit=RECURSION_LIMIT),
+                RunnableConfig(
+                    recursion_limit=RECURSION_LIMIT, configurable={"thread_id": "1"}
+                ),
                 stream_mode="messages",
             ),
         )
