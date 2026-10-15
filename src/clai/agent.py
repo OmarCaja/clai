@@ -1,4 +1,4 @@
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from typing import Any, cast
 
 from langchain.agents import create_agent
@@ -6,7 +6,7 @@ from langchain_core.messages import BaseMessage
 from langchain_core.runnables import RunnableConfig
 from langgraph.errors import GraphRecursionError
 
-from clai.tools import run_shell_command
+from clai.tools import make_run_shell_command
 
 SYSTEM_PROMPT = """You are clai, a command-line assistant that runs shell commands \
 with the run_shell_command tool.
@@ -16,7 +16,6 @@ Work step by step: run a command, look at its output, then decide the next comma
 Never guess about something you can check: if you need a file's contents, read it first.
 Never ask the user to run commands; run them yourself.
 When you have verified the facts, answer concisely."""
-TOOLS = [run_shell_command]
 RECURSION_LIMIT = 21
 
 # stream_mode="messages" yields (message chunk, metadata) pairs,
@@ -24,10 +23,12 @@ RECURSION_LIMIT = 21
 MessageStream = Iterator[tuple[BaseMessage, dict[str, Any]]]
 
 
-def ask(request: str, model_name: str) -> Iterator[str]:
+def ask(request: str, model_name: str, confirm: Callable[[str], bool]) -> Iterator[str]:
     """Answer a natural-language request, running shell commands when needed."""
 
-    agent = create_agent(model_name, tools=TOOLS, system_prompt=SYSTEM_PROMPT)
+    agent = create_agent(
+        model_name, tools=[make_run_shell_command(confirm)], system_prompt=SYSTEM_PROMPT
+    )
 
     answered = False
 
