@@ -3,6 +3,8 @@ name = "clai"
 version = "0.1.0"
 description = "An intelligent command-line assistant built with LangChain agents"
 readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
 authors = [
     { name = "Omar Caja", email = "omar.caja@hotmail.com" }
 ]
