@@ -38,10 +38,33 @@ cd clai
 uv sync
 ```
 
-To put `clai` on your `PATH` as a global command:
+### Install as a global command
+
+To run `clai` from any folder, install it as a uv tool (in its own isolated environment):
 
 ```bash
 uv tool install .
+```
+
+This copies the current code, so after pulling changes or editing the source, reinstall it:
+
+```bash
+uv tool install --reinstall .
+```
+
+If you are developing `clai`, install it in editable mode instead. The tool then runs your working copy, so code changes apply immediately:
+
+```bash
+uv tool install --editable .
+```
+
+Editable mode tracks your code, not your dependencies: run `uv tool install --editable --reinstall .` after changing `pyproject.toml`. It also points at this folder, so moving or deleting the repo breaks the tool.
+
+To see where the tool is installed, or remove it:
+
+```bash
+uv tool list --show-paths
+uv tool uninstall clai
 ```
 
 ## Configuration
@@ -75,7 +98,7 @@ CLAI_MODEL=google_genai:gemini-2.5-flash-lite
 GEMINI_API_KEY=your-key-here
 ```
 
-> `clai` does not load `.env` by itself. Run it with `uv run --env-file .env clai …`, or export the variables in your shell profile.
+> `clai` does not load `.env` by itself. From the repo, run it with `uv run --env-file .env clai …`. For the global command, export the variables in your shell profile (e.g. `~/.zshrc`) instead.
 
 ## Usage
 
