@@ -1,30 +1,60 @@
 import argparse
 import os
+import readline  # noqa: F401 Importing it gives input() arrow keys and history.
 
 from langgraph.graph.state import CompiledStateGraph
+from rich.console import Console
+from rich.prompt import Confirm
 
 from clai.agent import ask, make_agent
+from clai.render import MarkdownStream
 from clai.safety import is_read_only
 
 DEFAULT_MODEL = "google_genai:gemini-2.5-flash-lite"
+EXIT_COMMAND = "exit"
+
+console = Console()
+answer = MarkdownStream(console)
+
+
+def show_command(command: str, note: str = "") -> None:
+    # markup=False: commands often contain [brackets] that rich would parse.
+    console.print(f"$ {command}{note}", style="bold yellow", markup=False)
 
 
 def ask_user(command: str) -> bool:
-    answer = input(f"$ {command}\nRun this command? [y/N] ")
-    return answer.strip().lower() == "y"
+    show_command(command)
+    return Confirm.ask("Run this command?", default=False, console=console)
 
 
 def confirm(command: str) -> bool:
+    # The agent asks for a tool call mid-answer: stop redrawing the answer first.
+    answer.close()
     if is_read_only(command):
-        print(f"$ {command} (auto-approved)")
+        show_command(command, " (auto-approved)")
         return True
     return ask_user(command)
 
 
 def print_answer(agent: CompiledStateGraph, request: str) -> None:
-    for chunk in ask(agent, request):
-        print(chunk, end="", flush=True)
-    print()
+    with answer:
+        for chunk in ask(agent, request):
+            answer.write(chunk)
+
+
+def chat(agent: CompiledStateGraph) -> None:
+    """Keep answering requests until the user types `exit` or presses Ctrl-D."""
+    console.print(f"Type '{EXIT_COMMAND}' or press Ctrl-D to quit.", style="dim")
+    while True:
+        try:
+            line = console.input("[bold green]>[/] ").strip()
+        except (EOFError, KeyboardInterrupt):
+            console.print()
+            return
+        if line.lower() == EXIT_COMMAND:
+            return
+        if line:
+            print_answer(agent, line)
 
 
 def main() -> None:
@@ -44,7 +74,8 @@ def main() -> None:
         "--interactive",
         action="store_true",
         default=False,
-        help="Run in interactive mode, keep chatting; the agent remembers earlier turns",
+        help="keep chatting; the agent remembers earlier turns. "
+        f"Type '{EXIT_COMMAND}' or press Ctrl-D to quit",
     )
 
     args = parser.parse_args()
@@ -62,12 +93,4 @@ def main() -> None:
         print_answer(agent, request)
 
     if args.interactive:
-        while True:
-            try:
-                line = input("> ")
-            except (EOFError, KeyboardInterrupt):
-                print()
-                break
-            if not line.strip():
-                continue
-            print_answer(agent, line)
+        chat(agent)
