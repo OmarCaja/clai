@@ -2,10 +2,13 @@
 
 **Ask your terminal in plain words.**
 
+[![CI](https://github.com/OmarCaja/clai/actions/workflows/ci.yml/badge.svg)](https://github.com/<your-username>/clai/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 ![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue.svg)
 
-`clai` is a command-line assistant powered by an LLM agent. Ask it a question about your machine, your files or your Git repository; it figures out which shell commands to run, runs them (asking you first when a command could change something), reads the output and answers in rendered Markdown.
+`clai` is a command-line assistant powered by an LLM agent. Ask it a question about your machine, your files or your Git
+repository; it figures out which shell commands to run, runs them (asking you first when a command could change
+something), reads the output and answers in rendered Markdown.
 
 ```console
 $ clai "summarize the last 3 commits"
@@ -17,16 +20,20 @@ $ git log -3 --oneline (auto-approved)
  • 8744f79 Adding interactive mode
 ```
 
-Built with [LangChain](https://python.langchain.com/) `create_agent`, [LangGraph](https://langchain-ai.github.io/langgraph/) and [Rich](https://github.com/Textualize/rich).
+Built with [LangChain](https://python.langchain.com/)
+`create_agent`, [LangGraph](https://langchain-ai.github.io/langgraph/) and [Rich](https://github.com/Textualize/rich).
 
 ## Features
 
-- **Natural-language requests** — "what's using the most space in this folder?", "explain the last commit", "which files mention TODO?"
-- **Agentic loop** — the model runs a command, reads its output, and decides the next step until it has verified the answer.
+- **Natural-language requests** — "what's using the most space in this folder?", "explain the last commit", "which files
+  mention TODO?"
+- **Agentic loop** — the model runs a command, reads its output, and decides the next step until it has verified the
+  answer.
 - **Safe by default** — read-only commands run automatically; anything else needs your explicit `y`.
 - **Streaming Markdown** — answers appear as they are generated, with headings, lists, tables and highlighted code.
 - **Interactive mode** — keep chatting; the agent remembers earlier turns.
-- **Any model** — local models through LM Studio (or any OpenAI-compatible server), Google Gemini, or any provider LangChain supports.
+- **Any model** — local models through LM Studio (or any OpenAI-compatible server), Google Gemini, or any provider
+  LangChain supports.
 
 ## Installation
 
@@ -52,13 +59,15 @@ This copies the current code, so after pulling changes or editing the source, re
 uv tool install --reinstall .
 ```
 
-If you are developing `clai`, install it in editable mode instead. The tool then runs your working copy, so code changes apply immediately:
+If you are developing `clai`, install it in editable mode instead. The tool then runs your working copy, so code changes
+apply immediately:
 
 ```bash
 uv tool install --editable .
 ```
 
-Editable mode tracks your code, not your dependencies: run `uv tool install --editable --reinstall .` after changing `pyproject.toml`. It also points at this folder, so moving or deleting the repo breaks the tool.
+Editable mode tracks your code, not your dependencies: run `uv tool install --editable --reinstall .` after changing
+`pyproject.toml`. It also points at this folder, so moving or deleting the repo breaks the tool.
 
 To see where the tool is installed, or remove it:
 
@@ -69,7 +78,8 @@ uv tool uninstall clai
 
 ## Configuration
 
-The model is chosen with `--model`, falling back to the `CLAI_MODEL` environment variable, then to `google_genai:gemini-2.5-flash-lite`. Models use LangChain's `provider:model` format.
+The model is chosen with `--model`, falling back to the `CLAI_MODEL` environment variable, then to
+`google_genai:gemini-2.5-flash-lite`. Models use LangChain's `provider:model` format.
 
 Copy the example file and edit it:
 
@@ -98,7 +108,8 @@ CLAI_MODEL=google_genai:gemini-2.5-flash-lite
 GEMINI_API_KEY=your-key-here
 ```
 
-> `clai` does not load `.env` by itself. From the repo, run it with `uv run --env-file .env clai …`. For the global command, export the variables in your shell profile (e.g. `~/.zshrc`) instead.
+> `clai` does not load `.env` by itself. From the repo, run it with `uv run --env-file .env clai …`. For the global
+> command, export the variables in your shell profile (e.g. `~/.zshrc`) instead.
 
 ## Usage
 
@@ -126,21 +137,25 @@ Pick a model for one run:
 uv run --env-file .env clai -m openai:qwen/qwen3-30b-a3b-2507 "list the biggest files here"
 ```
 
-| Option | Description |
-| --- | --- |
-| `request` | What you want to know, in plain words. Required unless `-i` is given. |
-| `-m`, `--model` | `provider:model` to use. Defaults to `$CLAI_MODEL`. |
-| `-i`, `--interactive` | Keep chatting; the agent remembers earlier turns. |
-| `-h`, `--help` | Show help and exit. |
+| Option                | Description                                                           |
+|-----------------------|-----------------------------------------------------------------------|
+| `request`             | What you want to know, in plain words. Required unless `-i` is given. |
+| `-m`, `--model`       | `provider:model` to use. Defaults to `$CLAI_MODEL`.                   |
+| `-i`, `--interactive` | Keep chatting; the agent remembers earlier turns.                     |
+| `-h`, `--help`        | Show help and exit.                                                   |
 
 ## Safety
 
 `clai` runs real shell commands in your current directory, so every command goes through a check first:
 
-- **Auto-approved** — commands made only of read-only programs (`ls`, `pwd`, `cat`, `head`, `tail`, `wc`, `grep`, `find`, `sort`, `echo`, and `git status|log|diff|show`), optionally joined by pipes.
-- **Needs your confirmation** — everything else, including command chaining (`;`, `&&`, `||`), redirection (`>`, `>>`), background jobs (`&`), command substitution (`$(…)`, backticks), and options that make a read-only program write or execute (`find -delete`, `find -exec`, `sort -o`, `--output`).
+- **Auto-approved** — commands made only of read-only programs (`ls`, `pwd`, `cat`, `head`, `tail`, `wc`, `grep`,
+  `find`, `sort`, `echo`, and `git status|log|diff|show`), optionally joined by pipes.
+- **Needs your confirmation** — everything else, including command chaining (`;`, `&&`, `||`), redirection (`>`, `>>`),
+  background jobs (`&`), command substitution (`$(…)`, backticks), and options that make a read-only program write or
+  execute (`find -delete`, `find -exec`, `sort -o`, `--output`).
 
-Commands also time out after 30 seconds, get no stdin, and their output is capped at 10,000 characters before it is sent to the model. The agent stops after 21 steps if it hasn't reached an answer.
+Commands also time out after 30 seconds, get no stdin, and their output is capped at 10,000 characters before it is sent
+to the model. The agent stops after 21 steps if it hasn't reached an answer.
 
 The allowlist reduces risk; it is not a sandbox. Read every command before you approve it.
 
@@ -163,15 +178,16 @@ The allowlist reduces risk; it is not a sandbox. Read every command before you a
                  closed before each prompt)           └─ no  → ask the user [y/N]
 ```
 
-Text chunks and tool calls are interleaved: the model can write a few words, call a command, then keep writing. That is why the Markdown display is closed before each confirmation prompt and a new block starts afterwards.
+Text chunks and tool calls are interleaved: the model can write a few words, call a command, then keep writing. That is
+why the Markdown display is closed before each confirmation prompt and a new block starts afterwards.
 
-| Module | Responsibility |
-| --- | --- |
-| `cli.py` | Argument parsing, interactive loop, confirmation prompts. |
-| `agent.py` | Builds the agent with an in-memory checkpointer and streams its answer. |
-| `tools.py` | The `run_shell_command` tool: timeout, output cap, exit code. |
-| `safety.py` | Decides which commands are read-only and can skip confirmation. |
-| `render.py` | Re-renders streamed text as Markdown while it arrives. |
+| Module      | Responsibility                                                          |
+|-------------|-------------------------------------------------------------------------|
+| `cli.py`    | Argument parsing, interactive loop, confirmation prompts.               |
+| `agent.py`  | Builds the agent with an in-memory checkpointer and streams its answer. |
+| `tools.py`  | The `run_shell_command` tool: timeout, output cap, exit code.           |
+| `safety.py` | Decides which commands are read-only and can skip confirmation.         |
+| `render.py` | Re-renders streamed text as Markdown while it arrives.                  |
 
 ## Development
 
@@ -187,6 +203,9 @@ uv run ruff check --fix          # lint
 uv run ruff format               # format
 uv run mypy src tests            # type-check
 ```
+
+GitHub Actions runs the same checks (`ruff check`, `ruff format --check`, `mypy`, `pytest`) on every push to `main` and
+every pull request; see [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
 
 ## License
 
