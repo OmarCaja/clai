@@ -2,7 +2,7 @@
 
 **Ask your terminal in plain words.**
 
-[![CI](https://github.com/OmarCaja/clai/actions/workflows/ci.yml/badge.svg)](https://github.com/<your-username>/clai/actions/workflows/ci.yml)
+[![CI](https://github.com/OmarCaja/clai/actions/workflows/ci.yml/badge.svg)](https://github.com/OmarCaja/clai/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 ![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue.svg)
 
@@ -40,7 +40,7 @@ Built with [LangChain](https://python.langchain.com/)
 Requires Python 3.12+ and [uv](https://docs.astral.sh/uv/).
 
 ```bash
-git clone https://github.com/<your-username>/clai.git
+git clone https://github.com/OmarCaja/clai.git
 cd clai
 uv sync
 ```
