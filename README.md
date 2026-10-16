@@ -119,7 +119,7 @@ One-shot request:
 uv run --env-file .env clai "how many Python files are in src?"
 ```
 
-Interactive mode — type `exit` or press Ctrl-D to quit:
+Interactive mode — type `exit` or press Ctrl-D to quit. Use ↑/↓ to recall earlier requests, including ones from previous sessions (saved in `~/.clai_history`). Ctrl-C stops the current answer and returns to the prompt:
 
 ```bash
 uv run --env-file .env clai -i
@@ -142,6 +142,7 @@ uv run --env-file .env clai -m openai:qwen/qwen3-30b-a3b-2507 "list the biggest 
 | `request`             | What you want to know, in plain words. Required unless `-i` is given. |
 | `-m`, `--model`       | `provider:model` to use. Defaults to `$CLAI_MODEL`.                   |
 | `-i`, `--interactive` | Keep chatting; the agent remembers earlier turns.                     |
+| `-V`, `--version`     | Show the version and exit.                                            |
 | `-h`, `--help`        | Show help and exit.                                                   |
 
 ## Safety
