@@ -17,7 +17,7 @@ from clai.safety import is_read_only
 
 DEFAULT_MODEL = "google_genai:gemini-2.5-flash-lite"
 EXIT_COMMAND = "exit"
-HISTORY_FILE = Path.home() / ".clai_history"
+HISTORY_FILE = Path.home() / ".clai" / ".clai_history"
 HISTORY_LENGTH = 1000
 # Given to input() itself, not printed by rich, so readline knows where the line
 # starts and redraws recalled requests in the right place. Plain on purpose:

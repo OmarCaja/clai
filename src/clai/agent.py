@@ -9,6 +9,7 @@ from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.errors import GraphRecursionError
 from langgraph.graph.state import CompiledStateGraph
 
+from clai.skills import SkillMiddleware, load_skills
 from clai.tools import make_run_shell_command
 
 SYSTEM_PROMPT = """You are clai, a command-line assistant that runs shell commands \
@@ -19,7 +20,7 @@ Work step by step: run a command, look at its output, then decide the next comma
 Never guess about something you can check: if you need a file's contents, read it first.
 Never ask the user to run commands; run them yourself.
 When you have verified the facts, answer concisely."""
-RECURSION_LIMIT = 21
+RECURSION_LIMIT = 51
 # One conversation per run: every request continues the same thread.
 CONFIG = RunnableConfig(
     recursion_limit=RECURSION_LIMIT, configurable={"thread_id": "1"}
@@ -36,12 +37,15 @@ def make_agent(
     """Create an agent that can run shell commands.
 
     `model` is a "provider:model" name, or a chat model object (tests pass a fake).
+    Skills come from ~/.clai/skills/; with none, the agent gets no load_skill tool.
     """
+    skills = load_skills()
     return create_agent(
         model,
         tools=[make_run_shell_command(confirm)],
         system_prompt=SYSTEM_PROMPT,
         checkpointer=InMemorySaver(),
+        middleware=[SkillMiddleware(skills)] if skills else [],
     )
 
 
