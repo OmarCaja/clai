@@ -31,6 +31,7 @@ Built with [LangChain](https://python.langchain.com/)
   answer.
 - **Safe by default** — read-only commands run automatically; anything else needs your explicit `y`.
 - **Streaming Markdown** — answers appear as they are generated, with headings, lists, tables and highlighted code.
+- **Skills** — reusable instructions in `~/.clai/skills/` that the agent loads when a request matches.
 - **Interactive mode** — keep chatting; the agent remembers earlier turns.
 - **Any model** — local models through LM Studio (or any OpenAI-compatible server), Google Gemini, or any provider
   LangChain supports.
@@ -119,7 +120,7 @@ One-shot request:
 uv run --env-file .env clai "how many Python files are in src?"
 ```
 
-Interactive mode — type `exit` or press Ctrl-D to quit. Use ↑/↓ to recall earlier requests, including ones from previous sessions (saved in `~/.clai_history`). Ctrl-C stops the current answer and returns to the prompt:
+Interactive mode — type `exit` or press Ctrl-D to quit. Use ↑/↓ to recall earlier requests, including ones from previous sessions (saved in `~/.clai/.clai_history`). Ctrl-C stops the current answer and returns to the prompt:
 
 ```bash
 uv run --env-file .env clai -i
@@ -145,6 +146,26 @@ uv run --env-file .env clai -m openai:qwen/qwen3-30b-a3b-2507 "list the biggest 
 | `-V`, `--version`     | Show the version and exit.                                            |
 | `-h`, `--help`        | Show help and exit.                                                   |
 
+## Skills
+
+A skill saves you from typing the same long instructions every time. Put each one in its own folder as
+`~/.clai/skills/<name>/SKILL.md`: a short frontmatter `description` saying when to use it, then the instructions.
+
+```markdown
+---
+name: commit
+description: Use when the user asks to commit their changes. Writes a message in the style of previous commits.
+---
+1. Run `git status --porcelain` and `git diff HEAD -- . ':(exclude)*.lock'`.
+2. Run `git log -10 --format=%B` and copy the style of those messages.
+3. Stage the files with `git add <files>`, then `git commit -m "<message>"`.
+4. Confirm with `git log -1 --stat`.
+```
+
+The skill is named after its folder. Only the names and descriptions go into the prompt; when a request matches one
+(`clai "commit my changes"`), the model calls `load_skill` to read the full instructions and follows them. Skills are
+read when `clai` starts, and the commands they run go through the same safety checks as any other.
+
 ## Safety
 
 `clai` runs real shell commands in your current directory, so every command goes through a check first:
@@ -156,7 +177,7 @@ uv run --env-file .env clai -m openai:qwen/qwen3-30b-a3b-2507 "list the biggest 
   execute (`find -delete`, `find -exec`, `sort -o`, `--output`).
 
 Commands also time out after 30 seconds, get no stdin, and their output is capped at 10,000 characters before it is sent
-to the model. The agent stops after 21 steps if it hasn't reached an answer.
+to the model. The agent stops after 51 steps (about 25 commands) if it hasn't reached an answer.
 
 The allowlist reduces risk; it is not a sandbox. Read every command before you approve it.
 
@@ -166,7 +187,7 @@ The allowlist reduces risk; it is not a sandbox. Read every command before you a
  you ── request ──► cli.py ──► agent.ask() ──► agent.stream()   (InMemorySaver keeps earlier turns)
                                                     │
                      ┌──────────────────────────────┴─────────────────────────────┐
-                     │  LangGraph loop, max 21 steps                              │
+                     │  LangGraph loop, max 51 steps                              │
                      │                                                            │
                      │   model ──── tool call ────► run_shell_command (tools.py)  │
                      │     ▲                               │                      │
@@ -189,6 +210,7 @@ why the Markdown display is closed before each confirmation prompt and a new blo
 | `tools.py`  | The `run_shell_command` tool: timeout, output cap, exit code.           |
 | `safety.py` | Decides which commands are read-only and can skip confirmation.         |
 | `render.py` | Re-renders streamed text as Markdown while it arrives.                  |
+| `skills.py` | Loads skills and lists them for the model, with the `load_skill` tool.  |
 
 ## Development
 
