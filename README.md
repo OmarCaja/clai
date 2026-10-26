@@ -31,7 +31,7 @@ Built with [LangChain](https://python.langchain.com/)
   answer.
 - **Safe by default** — read-only commands run automatically; anything else needs your explicit `y`.
 - **Streaming Markdown** — answers appear as they are generated, with headings, lists, tables and highlighted code.
-- **Skills** — reusable instructions in `~/.clai/skills/` that the agent loads when a request matches.
+- **Skills** — reusable instructions the agent loads when a request matches: built-in ones (`commit`) plus your own in `~/.clai/skills/`.
 - **Interactive mode** — keep chatting; the agent remembers earlier turns.
 - **Any model** — local models through LM Studio (or any OpenAI-compatible server), Google Gemini, or any provider
   LangChain supports.
@@ -148,17 +148,19 @@ uv run --env-file .env clai -m openai:qwen/qwen3-30b-a3b-2507 "list the biggest 
 
 ## Skills
 
-A skill saves you from typing the same long instructions every time. Put each one in its own folder as
-`~/.clai/skills/<name>/SKILL.md`: a short frontmatter `description` saying when to use it, then the instructions.
+A skill saves you from typing the same long instructions every time. clai ships with a `commit` skill
+(`src/clai/builtin_skills/`). Add your own, each in its own folder, as `~/.clai/skills/<name>/SKILL.md`: a short
+frontmatter `description` saying when to use it, then the instructions. A skill of yours with the same name as a
+built-in one replaces it.
 
 ```markdown
 ---
 name: commit
 description: Use when the user asks to commit their changes. Writes a message in the style of previous commits.
 ---
-1. Run `git status --porcelain` and `git diff HEAD -- . ':(exclude)*.lock'`.
+1. Run `git add -A`, then `git diff --staged -- . ':(exclude)*.lock'`.
 2. Run `git log -10 --format=%B` and copy the style of those messages.
-3. Stage the files with `git add <files>`, then `git commit -m "<message>"`.
+3. Run `git commit -m "<message>"`.
 4. Confirm with `git log -1 --stat`.
 ```
 
@@ -189,7 +191,7 @@ The allowlist reduces risk; it is not a sandbox. Read every command before you a
                      ┌──────────────────────────────┴─────────────────────────────┐
                      │  LangGraph loop, max 51 steps                              │
                      │                                                            │
-                     │   model ──── tool call ────► run_shell_command (tools.py)  │
+                     │   model ──── tool call ────► run_shell_command (tools/)    │
                      │     ▲                               │                      │
                      │     └────── exit code + output ─────┘                      │
                      └───────┬───────────────────────────────┬────────────────────┘
@@ -203,14 +205,16 @@ The allowlist reduces risk; it is not a sandbox. Read every command before you a
 Text chunks and tool calls are interleaved: the model can write a few words, call a command, then keep writing. That is
 why the Markdown display is closed before each confirmation prompt and a new block starts afterwards.
 
-| Module      | Responsibility                                                          |
-|-------------|-------------------------------------------------------------------------|
-| `cli.py`    | Argument parsing, interactive loop, confirmation prompts.               |
-| `agent.py`  | Builds the agent with an in-memory checkpointer and streams its answer. |
-| `tools.py`  | The `run_shell_command` tool: timeout, output cap, exit code.           |
-| `safety.py` | Decides which commands are read-only and can skip confirmation.         |
-| `render.py` | Re-renders streamed text as Markdown while it arrives.                  |
-| `skills.py` | Loads skills and lists them for the model, with the `load_skill` tool.  |
+| Module                | Responsibility                                                           |
+|-----------------------|--------------------------------------------------------------------------|
+| `cli.py`              | Argument parsing, interactive loop, confirmation prompts.                |
+| `agent.py`            | Builds the agent with an in-memory checkpointer and streams its answer.  |
+| `tools/shell.py`      | The `run_shell_command` tool: timeout, output cap, exit code.            |
+| `tools/load_skill.py` | The `load_skill` tool: hands the model a skill's instructions.           |
+| `safety.py`           | Decides which commands are read-only and can skip confirmation.          |
+| `render.py`           | Re-renders streamed text as Markdown while it arrives.                   |
+| `skills.py`           | Reads and parses `~/.clai/skills/<name>/SKILL.md` files.                 |
+| `middleware.py`       | `SkillMiddleware`: lists skills in the system prompt, adds `load_skill`. |
 
 ## Development
 

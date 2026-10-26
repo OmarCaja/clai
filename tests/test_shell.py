@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from clai.tools import MAX_OUTPUT_CHARS, make_run_shell_command
+from clai.tools.shell import MAX_OUTPUT_CHARS, make_run_shell_command
 
 
 def test_runs_command_when_confirmed() -> None:

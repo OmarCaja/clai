@@ -9,8 +9,9 @@ from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.errors import GraphRecursionError
 from langgraph.graph.state import CompiledStateGraph
 
-from clai.skills import SkillMiddleware, load_skills
-from clai.tools import make_run_shell_command
+from clai.middleware import SkillMiddleware
+from clai.skills import BUILTIN_SKILLS_DIR, USER_SKILLS_DIR, load_skills
+from clai.tools.shell import make_run_shell_command
 
 SYSTEM_PROMPT = """You are clai, a command-line assistant that runs shell commands \
 with the run_shell_command tool.
@@ -37,9 +38,10 @@ def make_agent(
     """Create an agent that can run shell commands.
 
     `model` is a "provider:model" name, or a chat model object (tests pass a fake).
-    Skills come from ~/.clai/skills/; with none, the agent gets no load_skill tool.
+    Skills are the built-in ones plus ~/.clai/skills/, where a skill with the same
+    name replaces the built-in one. With none, the agent gets no load_skill tool.
     """
-    skills = load_skills()
+    skills = load_skills(BUILTIN_SKILLS_DIR, USER_SKILLS_DIR)
     return create_agent(
         model,
         tools=[make_run_shell_command(confirm)],
