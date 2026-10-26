@@ -22,12 +22,12 @@ This shows every staged change, new files included, except dependency lock files
 
 ## 3. Learn the project's commit style
 
-Run `git log -10 --format=%B` once. Copy only the style of those messages:
+Run `git log -10 --format=%s` once. It prints only the subject lines of the last commits. Copy only their style:
 
-- any prefix or ticket tag (e.g. `[OC] - `, `feat:`, `JIRA-123`)
+- **the prefix**: if the subjects start with the same text before the description (a tag like `[XY] - `, `feat: `, `JIRA-123 `), your subject MUST start with that exact text, character for character. The prefix is part of the style, not example text.
 - language, tense ("Add" or "Added") and capitalisation
 
-Never reuse a subject or bullet from the log: those describe older commits. Your message describes only the diff from step 2, so it must not repeat an earlier subject.
+Never reuse a subject from the log: those describe older commits. Your message describes only the diff from step 2, so it must not repeat an earlier subject.
 
 If there are no commits, use a short imperative subject.
 
@@ -48,6 +48,11 @@ Everything in `<...>` is a placeholder: replace it, and never copy example text 
 Commit with exactly two `-m` flags: the subject in double quotes, then all the bullets in one `$'...'` string with `\n` between them. `$'...'` turns each `\n` into a real newline.
 
     git commit -m "<subject>" -m $'- <first change>\n- <second change>'
+
+Before you run it, check your subject against the log from step 3:
+
+- It starts with the same prefix as those subjects, if they have one.
+- It is not one of those subjects. If it is, rewrite it from the diff.
 
 Never run `git commit` without `-m`: Git would open an editor, which hangs here. Inside the message, never use backticks, `$(`, single quotes (`'`) or backslashes other than `\n`.
 

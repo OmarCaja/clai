@@ -47,6 +47,9 @@ def test_read_only_commands_are_auto_approved(command: str) -> None:
         "ls && rm x",
         "ls || rm x",
         "sleep 100 &",
+        # a newline is a command separator to the shell
+        "ls\nrm x",
+        "echo hi\r\ntouch x",
         # redirection writes files
         "cat a.txt > b.txt",
         "echo x >> notes.txt",
@@ -63,6 +66,9 @@ def test_read_only_commands_are_auto_approved(command: str) -> None:
         "find . -exec rm {} ;",
         "sort -o out.txt in.txt",
         "git diff --output=patch.txt",
+        "find . -fls out.txt",
+        "sort --compress-program=sh in.txt",
+        "git diff --ext-diff",
         # unparseable input
         "cat 'unterminated",
     ],

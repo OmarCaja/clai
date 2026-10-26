@@ -8,16 +8,15 @@
 
 `clai` is a command-line assistant powered by an LLM agent. Ask it a question about your machine, your files or your Git
 repository; it figures out which shell commands to run, runs them (asking you first when a command could change
-something), reads the output and answers in rendered Markdown.
+something), reads the output and answers.
 
 ```console
 $ clai "summarize the last 3 commits"
 $ git log -3 --oneline (auto-approved)
-
-                         Last 3 Commits
- • 2c707fd Add streaming Markdown rendering and improve CLI input handling
- • ae685e7 Adding CLAUDE.md
- • 8744f79 Adding interactive mode
+The last 3 commits:
+- 2c707fd Add streaming Markdown rendering and improve CLI input handling
+- ae685e7 Adding CLAUDE.md
+- 8744f79 Adding interactive mode
 ```
 
 Built with [LangChain](https://python.langchain.com/)
@@ -30,7 +29,6 @@ Built with [LangChain](https://python.langchain.com/)
 - **Agentic loop** — the model runs a command, reads its output, and decides the next step until it has verified the
   answer.
 - **Safe by default** — read-only commands run automatically; anything else needs your explicit `y`.
-- **Streaming Markdown** — answers appear as they are generated, with headings, lists, tables and highlighted code.
 - **Skills** — reusable instructions the agent loads when a request matches: built-in ones (`commit`) plus your own in `~/.clai/skills/`.
 - **Interactive mode** — keep chatting; the agent remembers earlier turns.
 - **Any model** — local models through LM Studio (or any OpenAI-compatible server), Google Gemini, or any provider
@@ -186,7 +184,7 @@ The allowlist reduces risk; it is not a sandbox. Read every command before you a
 ## How it works
 
 ```
- you ── request ──► cli.py ──► console.py ──► agent.ask() ──► agent.stream()   (InMemorySaver keeps earlier turns)
+ you ── request ──► cli.py ──► console.py ──► agent.ask() ──► agent.invoke()   (InMemorySaver keeps earlier turns)
                                                     │
                      ┌──────────────────────────────┴─────────────────────────────┐
                      │  LangGraph loop                                            │
@@ -198,23 +196,17 @@ The allowlist reduces risk; it is not a sandbox. Read every command before you a
                      │     │                     resume with the decisions        │
                      │     └── exit code + output ── run_shell_command (shell/)   │
                      └───────┬───────────────────────────────┬────────────────────┘
-                             │ text chunks                   │ confirm / auto_approved (console.py)
+                             │ final answer                  │ confirm / auto_approved (console.py)
                              ▼                               ▼
-                render.MarkdownStream              "(auto-approved)" or [y/N]
-                (redraws Markdown as it arrives;
-                 closed before each prompt)
+                print(answer)                      "(auto-approved)" or [y/N]
 ```
-
-Text chunks and tool calls are interleaved: the model can write a few words, call a command, then keep writing. That is
-why the Markdown display is closed before each confirmation prompt and a new block starts afterwards.
 
 | Module                  | Responsibility                                                           |
 |-------------------------|--------------------------------------------------------------------------|
 | `cli.py`                | The `clai` command: arguments, one-shot request.                         |
 | `chat.py`               | Interactive mode (`-i`) with line history.                               |
 | `console.py`            | Terminal output: answers, commands, y/N prompt, errors.                  |
-| `render.py`             | Re-renders streamed text as Markdown while it arrives.                   |
-| `agent.py`              | Builds the agent (checkpointer, middleware), streams answers.            |
+| `agent.py`              | Builds the agent (checkpointer, middleware), returns its answers.        |
 | `shell/read_only.py`    | Decides which commands are read-only and can skip confirmation.          |
 | `shell/tool.py`         | The `run_shell_command` tool: timeout, output cap, exit code.            |
 | `shell/middleware.py`   | Approval middleware: pause before commands, resume with the decisions.   |

@@ -1,4 +1,3 @@
-from collections.abc import Iterator
 from typing import Any, cast
 
 import pytest
@@ -12,8 +11,7 @@ NO_AGENT = cast(Agent, None)
 def test_failed_request_is_reported_in_one_line(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    def failing_ask(agent: Agent, *args: Any) -> Iterator[str]:
-        yield "Let me check"
+    def failing_ask(agent: Agent, *args: Any) -> str:
         raise ConnectionError("Connection error.\nLong library details.")
 
     monkeypatch.setattr(console, "ask", failing_ask)
@@ -26,8 +24,7 @@ def test_failed_request_is_reported_in_one_line(
 def test_ctrl_c_stops_only_the_answer(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    def interrupted_ask(agent: Agent, *args: Any) -> Iterator[str]:
-        yield "Let me check"
+    def interrupted_ask(agent: Agent, *args: Any) -> str:
         raise KeyboardInterrupt
 
     monkeypatch.setattr(console, "ask", interrupted_ask)

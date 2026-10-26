@@ -4,10 +4,8 @@ from rich.console import Console
 from rich.prompt import Confirm
 
 from clai.agent import Agent, ask
-from clai.render import MarkdownStream
 
 console = Console()
-answer = MarkdownStream(console)
 
 
 def show_command(command: str, note: str = "") -> None:
@@ -21,29 +19,22 @@ def show_error(message: str) -> None:
     console.print(f"Error: {message}", style="bold red", markup=False)
 
 
-# The agent reports commands mid-answer, so both callbacks below first stop
-# redrawing the answer; the next chunk of text starts a new block under them.
-
-
 def confirm(command: str) -> bool:
     """Ask the user whether a command that needs review may run. Defaults to no."""
-    answer.close()
     show_command(command)
     return Confirm.ask("Run this command?", default=False, console=console)
 
 
 def auto_approved(command: str) -> None:
     """Show a read-only command that runs without asking."""
-    answer.close()
     show_command(command, " (auto-approved)")
 
 
 def print_answer(agent: Agent, request: str) -> bool:
-    """Stream the answer to a request. Returns False if it failed or was stopped."""
+    """Print the answer to a request. Returns False if it failed or was stopped."""
     try:
-        with answer:
-            for chunk in ask(agent, request, confirm, auto_approved):
-                answer.write(chunk)
+        # Plain text: Markdown in the answer is shown as written.
+        print(ask(agent, request, confirm, auto_approved))
     except KeyboardInterrupt:
         console.print("Stopped.", style="dim")
         return False

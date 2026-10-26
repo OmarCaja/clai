@@ -1,12 +1,12 @@
-"""Build the agent and stream its answers.
+"""Build the agent and get its answers.
 
 The agent is LangChain's `create_agent` loop (model -> tools -> model ...), which
 runs as a LangGraph graph. This module knows nothing about the terminal: the CLI
 passes in callbacks for anything that needs the user.
 """
 
-from collections.abc import Callable, Iterator
-from typing import Any, cast
+from collections.abc import Callable
+from typing import Any
 
 from langchain.agents import create_agent
 from langchain.agents.middleware import AgentMiddleware
@@ -14,7 +14,6 @@ from langchain_core.language_models import BaseChatModel
 from langchain_core.runnables import RunnableConfig
 from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.graph.state import CompiledStateGraph
-from langgraph.types import Command
 
 from clai.shell.middleware import make_review_middleware, resume
 from clai.shell.tool import run_shell_command
@@ -35,11 +34,6 @@ CONFIG = RunnableConfig(configurable={"thread_id": "1"})
 
 # What `create_agent` returns. Its state types don't matter to clai.
 Agent = CompiledStateGraph[Any, Any, Any, Any]
-# What the agent receives: a new request, or a Command resuming a paused run.
-AgentInput = dict[str, Any] | Command[Any]
-# `stream_mode="messages"` yields (message chunk, metadata) pairs. LangGraph's type
-# hints don't say so.
-Stream = Iterator[tuple[Any, dict[str, Any]]]
 
 
 def make_agent(model: str | BaseChatModel) -> Agent:
@@ -69,8 +63,8 @@ def ask(
     request: str,
     confirm: Callable[[str], bool],
     auto_approved: Callable[[str], None],
-) -> Iterator[str]:
-    """Answer a natural-language request, yielding the answer's text as it arrives.
+) -> str:
+    """Answer a natural-language request.
 
     Args:
         agent: from `make_agent`.
@@ -78,21 +72,11 @@ def ask(
         confirm: asks the user whether a command that needs review may run.
         auto_approved: told about each read-only command, which runs without asking.
     """
-    next_input: AgentInput | None = {"messages": [{"role": "user", "content": request}]}
-    # Each pass runs until the answer is done or the model wants commands, which
-    # pause the run; `resume` decides about them and the next pass continues.
-    while next_input is not None:
-        yield from _run(agent, next_input)
-        interrupts = agent.get_state(CONFIG).interrupts
-        next_input = (
-            resume(interrupts[0], confirm, auto_approved) if interrupts else None
-        )
-
-
-def _run(agent: Agent, agent_input: AgentInput) -> Iterator[str]:
-    """Stream one run of the agent, yielding the text the model writes."""
-    stream = cast(Stream, agent.stream(agent_input, CONFIG, stream_mode="messages"))
-    for token, metadata in stream:
-        # Tool results stream too; only the model's text is the answer.
-        if metadata["langgraph_node"] == "model" and token.text:
-            yield token.text
+    message = {"messages": [{"role": "user", "content": request}]}
+    # version="v2" returns a GraphOutput: state in `.value`, pauses in `.interrupts`.
+    result = agent.invoke(message, CONFIG, version="v2")
+    # The run pauses before each command; `resume` decides about it and continues.
+    while result.interrupts:
+        decisions = resume(result.interrupts[0], confirm, auto_approved)
+        result = agent.invoke(decisions, CONFIG, version="v2")
+    return str(result.value["messages"][-1].text)

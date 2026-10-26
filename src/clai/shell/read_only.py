@@ -21,7 +21,17 @@ READ_ONLY_PROGRAMS = {
 }
 READ_ONLY_GIT = {"status", "log", "diff", "show"}
 # Options that make an otherwise read-only program write files or run commands.
-FORBIDDEN_ARGS = ("-delete", "-exec", "-ok", "-fprint", "-o", "--output")
+FORBIDDEN_ARGS = (
+    "-delete",
+    "-exec",
+    "-ok",
+    "-fprint",
+    "-fls",
+    "-o",
+    "--output",
+    "--compress-program",
+    "--ext-diff",
+)
 OPERATOR_CHARS = "();<>|&"
 
 
@@ -32,8 +42,9 @@ def is_read_only(command: str) -> bool:
     operators, no command substitution and no options that write or execute.
     """
     # Command substitution: shlex keeps these inside words (e.g. in double
-    # quotes), but the shell still runs what's inside.
-    if "`" in command or "$(" in command:
+    # quotes), but the shell still runs what's inside. A newline is whitespace to
+    # shlex but separates commands for the shell.
+    if any(s in command for s in ("`", "$(", "\n", "\r")):
         return False
     try:
         lexer = shlex.shlex(command, posix=True, punctuation_chars=True)

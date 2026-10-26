@@ -16,9 +16,7 @@ class ScriptedModel(GenericFakeChatModel):
 
 
 def scripted_agent(replies: Iterable[AIMessage]) -> Agent:
-    # disable_streaming: the fake cannot stream a reply with no text (a tool call).
-    model = ScriptedModel(messages=iter(replies), disable_streaming=True)
-    return make_agent(model)
+    return make_agent(ScriptedModel(messages=iter(replies)))
 
 
 def reply(
@@ -27,7 +25,7 @@ def reply(
     confirm: Callable[[str], bool] = lambda command: True,
     auto_approved: Callable[[str], None] = lambda command: None,
 ) -> str:
-    return "".join(ask(agent, request, confirm, auto_approved))
+    return ask(agent, request, confirm, auto_approved)
 
 
 def run_command(command: str, call_id: str = "call-1") -> AIMessage:

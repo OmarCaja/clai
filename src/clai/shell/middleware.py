@@ -1,7 +1,7 @@
 """Pause the agent before every shell command, so the CLI can approve it.
 
 LangChain's `HumanInTheLoopMiddleware` does the pausing: before the tool runs, it
-raises a LangGraph interrupt, which saves the run and ends the stream. The caller
+raises a LangGraph interrupt, which saves the run and returns from `invoke`. The caller
 then decides about each command and continues the run with `resume`.
 
 It pauses for read-only commands too, so every decision is made in one place.
@@ -29,7 +29,10 @@ def make_review_middleware() -> HumanInTheLoopMiddleware:
     return HumanInTheLoopMiddleware(
         interrupt_on={
             run_shell_command.name: {"allowed_decisions": ["approve", "reject"]}
-        }
+        },
+        # `resume` answers with one ordered list of decisions per pause. Pinned
+        # because LangChain plans to make "per_call" the default.
+        interrupt_mode="batched",
     )
 
 

@@ -3,13 +3,11 @@
 How a request flows through the package:
 
     cli -> console.print_answer -> agent.ask -> the LangChain agent
-                                                 |- tools.shell: runs commands
-                                                 |- approval: asks before risky ones
+                                                 |- shell: runs commands, asks first
                                                  '- skills: loads instructions
 
 - `cli`: the `clai` command (arguments, one-shot request).
 - `chat`: interactive mode with line history.
 - `console`: terminal output and the y/N prompt.
-- `render`: Markdown that redraws while it streams.
-- `agent`: builds the agent and streams its answers; no terminal code.
+- `agent`: builds the agent and gets its answers; no terminal code.
 """
