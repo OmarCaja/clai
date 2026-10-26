@@ -157,7 +157,7 @@ name: commit
 description: Use when the user asks to commit their changes. Writes a message in the style of previous commits.
 ---
 1. Run `git add -A`, then `git diff --staged -- . ':(exclude)*.lock'`.
-2. Run `git log -10 --format=%B` and copy the style of those messages.
+2. Run `git log -10 --format=%s` and copy the style of those subjects.
 3. Run `git commit -m "<message>"`.
 4. Confirm with `git log -1 --stat`.
 ```
@@ -190,7 +190,7 @@ The allowlist reduces risk; it is not a sandbox. Read every command before you a
                      │  LangGraph loop                                            │
                      │                                                            │
                      │   model ── tool call ──► HumanInTheLoopMiddleware          │
-                     │     ▲                     │ interrupt ──► ask(): read-only?│
+                     │     ▲                     │ pause ──► resume(): read-only? │
                      │     │                     ├─ yes → auto-approve            │
                      │     │                     └─ no  → y/N                     │
                      │     │                     resume with the decisions        │
