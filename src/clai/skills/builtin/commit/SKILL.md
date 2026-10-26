@@ -22,10 +22,12 @@ This shows every staged change, new files included, except dependency lock files
 
 ## 3. Learn the project's commit style
 
-Run `git log -10 --format=%B` once. Copy from those subjects:
+Run `git log -10 --format=%B` once. Copy only the style of those messages:
 
 - any prefix or ticket tag (e.g. `[OC] - `, `feat:`, `JIRA-123`)
 - language, tense ("Add" or "Added") and capitalisation
+
+Never reuse a subject or bullet from the log: those describe older commits. Your message describes only the diff from step 2, so it must not repeat an earlier subject.
 
 If there are no commits, use a short imperative subject.
 
