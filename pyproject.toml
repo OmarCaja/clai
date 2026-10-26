@@ -1,6 +1,6 @@
 [project]
 name = "clai"
-version = "1.0.0"
+version = "1.1.0"
 description = "An intelligent command-line assistant built with LangChain agents"
 readme = "README.md"
 license = "MIT"
@@ -33,3 +33,24 @@ dev = [
     "pytest>=9.1.1",
     "ruff>=0.17.0",
 ]
+
+[tool.ruff.lint]
+# E/W/F: pycodestyle and pyflakes; I: sorted imports; UP: modern syntax;
+# B: likely bugs; SIM/C4/RET: simpler code; N: naming; PT: pytest style;
+# PTH: pathlib over os.path; BLE: no silent `except Exception`; RUF: ruff's own;
+# D: docstrings.
+select = [
+    "E", "W", "F", "I", "UP", "B", "SIM", "C4", "RET", "N", "PT", "PTH", "BLE", "RUF", "D"
+]
+# D105/D107: magic methods and __init__ are documented by their class docstring.
+ignore = ["D105", "D107"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.per-file-ignores]
+# Test names say what they check; docstrings would repeat them.
+"tests/**" = ["D"]
+
+[tool.mypy]
+strict = true

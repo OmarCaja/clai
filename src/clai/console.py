@@ -1,0 +1,63 @@
+"""Everything clai shows in the terminal: answers, commands, prompts and errors."""
+
+from pydantic import ValidationError
+from rich.console import Console
+from rich.prompt import Confirm
+
+from clai.agent import Agent, ask
+from clai.render import MarkdownStream
+
+console = Console()
+answer = MarkdownStream(console)
+
+
+def show_command(command: str, note: str = "") -> None:
+    """Print a command the agent wants to run, like a shell prompt."""
+    # markup=False: commands often contain [brackets] that rich would parse.
+    console.print(f"$ {command}{note}", style="bold yellow", markup=False)
+
+
+def show_error(message: str) -> None:
+    """Print an error in one red line."""
+    console.print(f"Error: {message}", style="bold red", markup=False)
+
+
+def summarize(error: Exception) -> str:
+    """The useful part of a library error, without its long details."""
+    if isinstance(error, ValidationError):
+        # e.g. a missing API key, reported when the chat model is created.
+        return str(error.errors()[0]["msg"]).removeprefix("Value error, ")
+    return str(error).splitlines()[0]
+
+
+# The agent reports commands mid-answer, so both callbacks below first stop
+# redrawing the answer; the next chunk of text starts a new block under them.
+
+
+def confirm(command: str) -> bool:
+    """Ask the user whether a command that needs review may run. Defaults to no."""
+    answer.close()
+    show_command(command)
+    return Confirm.ask("Run this command?", default=False, console=console)
+
+
+def auto_approved(command: str) -> None:
+    """Show a read-only command that runs without asking."""
+    answer.close()
+    show_command(command, " (auto-approved)")
+
+
+def print_answer(agent: Agent, request: str) -> bool:
+    """Stream the answer to a request. Returns False if it failed or was stopped."""
+    try:
+        with answer:
+            for chunk in ask(agent, request, confirm, auto_approved):
+                answer.write(chunk)
+    except KeyboardInterrupt:
+        console.print("Stopped.", style="dim")
+        return False
+    # Each provider raises its own errors; any failure ends only this request.
+    except Exception as error:  # noqa: BLE001
+        show_error(f"The request failed: {summarize(error)}")
+        return False
+    return True

@@ -149,7 +149,7 @@ uv run --env-file .env clai -m openai:qwen/qwen3-30b-a3b-2507 "list the biggest 
 ## Skills
 
 A skill saves you from typing the same long instructions every time. clai ships with a `commit` skill
-(`src/clai/builtin_skills/`). Add your own, each in its own folder, as `~/.clai/skills/<name>/SKILL.md`: a short
+(`src/clai/skills/builtin/`). Add your own, each in its own folder, as `~/.clai/skills/<name>/SKILL.md`: a short
 frontmatter `description` saying when to use it, then the instructions. A skill of yours with the same name as a
 built-in one replaces it.
 
@@ -186,46 +186,53 @@ The allowlist reduces risk; it is not a sandbox. Read every command before you a
 ## How it works
 
 ```
- you ── request ──► cli.py ──► agent.ask() ──► agent.stream()   (InMemorySaver keeps earlier turns)
+ you ── request ──► cli.py ──► console.py ──► agent.ask() ──► agent.stream()   (InMemorySaver keeps earlier turns)
                                                     │
                      ┌──────────────────────────────┴─────────────────────────────┐
                      │  LangGraph loop, max 51 steps                              │
                      │                                                            │
-                     │   model ──── tool call ────► run_shell_command (tools/)    │
-                     │     ▲                               │                      │
-                     │     └────── exit code + output ─────┘                      │
+                     │   model ── tool call ──► HumanInTheLoopMiddleware          │
+                     │     ▲                     │ when: not is_read_only?        │
+                     │     │                     ├─ no  → run it                  │
+                     │     │                     └─ yes → interrupt ──► ask()     │
+                     │     │                               resumes with y/N       │
+                     │     └── exit code + output ── run_shell_command (tools/)   │
                      └───────┬───────────────────────────────┬────────────────────┘
-                             │ text chunks                   │ confirm(command), injected by cli.py
+                             │ text chunks                   │ confirm / auto_approved (console.py)
                              ▼                               ▼
-                render.MarkdownStream               safety.is_read_only?
-                (redraws Markdown as it arrives;      ├─ yes → run it, "(auto-approved)"
-                 closed before each prompt)           └─ no  → ask the user [y/N]
+                render.MarkdownStream              "(auto-approved)" or [y/N]
+                (redraws Markdown as it arrives;
+                 closed before each prompt)
 ```
 
 Text chunks and tool calls are interleaved: the model can write a few words, call a command, then keep writing. That is
 why the Markdown display is closed before each confirmation prompt and a new block starts afterwards.
 
-| Module                | Responsibility                                                           |
-|-----------------------|--------------------------------------------------------------------------|
-| `cli.py`              | Argument parsing, interactive loop, confirmation prompts.                |
-| `agent.py`            | Builds the agent with an in-memory checkpointer and streams its answer.  |
-| `tools/shell.py`      | The `run_shell_command` tool: timeout, output cap, exit code.            |
-| `tools/load_skill.py` | The `load_skill` tool: hands the model a skill's instructions.           |
-| `safety.py`           | Decides which commands are read-only and can skip confirmation.          |
-| `render.py`           | Re-renders streamed text as Markdown while it arrives.                   |
-| `skills.py`           | Reads and parses `~/.clai/skills/<name>/SKILL.md` files.                 |
-| `middleware.py`       | `SkillMiddleware`: lists skills in the system prompt, adds `load_skill`. |
+| Module                  | Responsibility                                                           |
+|-------------------------|--------------------------------------------------------------------------|
+| `cli.py`                | The `clai` command: arguments, one-shot request.                         |
+| `chat.py`               | Interactive mode (`-i`) with line history.                               |
+| `console.py`            | Terminal output: answers, commands, y/N prompt, errors.                  |
+| `render.py`             | Re-renders streamed text as Markdown while it arrives.                   |
+| `agent.py`              | Builds the agent (checkpointer, middleware), streams answers.            |
+| `tools/shell.py`        | The `run_shell_command` tool: timeout, output cap, exit code.            |
+| `approval/review.py`    | Approval middleware: when to pause, resuming with the user's answers.    |
+| `approval/read_only.py` | Decides which commands are read-only and can skip confirmation.          |
+| `skills/loader.py`      | Reads and parses `<name>/SKILL.md` files.                                |
+| `skills/tool.py`        | The `load_skill` tool: hands the model a skill's instructions.           |
+| `skills/middleware.py`  | `SkillMiddleware`: lists skills in the system prompt, adds `load_skill`. |
 
 ## Development
 
 ```bash
 uv sync                          # install runtime and dev dependencies
 uv run pre-commit install        # run ruff, mypy and pytest on every commit
+uv run pre-commit run --all-files   # run all those checks now, without committing
 ```
 
 ```bash
 uv run pytest -q                 # run the tests
-uv run pytest tests/test_safety.py -k rm   # run a subset
+uv run pytest tests/test_read_only.py -k rm   # run a subset
 uv run ruff check --fix          # lint
 uv run ruff format               # format
 uv run mypy src tests            # type-check

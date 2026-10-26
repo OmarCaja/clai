@@ -1,3 +1,5 @@
+"""Show streamed text as Markdown in the terminal."""
+
 from types import TracebackType
 from typing import Self
 
@@ -11,6 +13,12 @@ class MarkdownStream:
 
     Markdown can't be rendered chunk by chunk (a `**` means nothing until its
     closing `**` arrives), so the whole text so far is re-rendered on each write.
+
+    Use it as a context manager so the last block is always closed:
+
+        with stream:
+            for chunk in chunks:
+                stream.write(chunk)
     """
 
     def __init__(self, console: Console) -> None:
@@ -24,18 +32,19 @@ class MarkdownStream:
         self._text += chunk
         live.update(Markdown(self._text), refresh=True)
 
-    def _start_block(self) -> Live:
-        live = Live(console=self._console, auto_refresh=False)
-        live.start()
-        self._live = live
-        self._text = ""
-        return live
-
     def close(self) -> None:
         """Freeze what is shown, so other output can be printed below it."""
         if self._live is not None:
             self._live.stop()
             self._live = None
+
+    def _start_block(self) -> Live:
+        """Start redrawing a new block of text below what is already printed."""
+        live = Live(console=self._console, auto_refresh=False)
+        live.start()
+        self._live = live
+        self._text = ""
+        return live
 
     def __enter__(self) -> Self:
         return self

@@ -4,8 +4,8 @@ from langchain.agents.middleware import ModelRequest, ModelResponse
 from langchain_core.language_models import GenericFakeChatModel
 from langchain_core.messages import AIMessage, SystemMessage
 
-from clai.middleware import SkillMiddleware
-from clai.skills import Skill
+from clai.skills.loader import Skill
+from clai.skills.middleware import SkillMiddleware
 
 
 def test_middleware_appends_skills_to_system_prompt() -> None:

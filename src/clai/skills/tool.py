@@ -1,10 +1,16 @@
+"""The `load_skill` tool: the model calls it to read a skill's full instructions."""
+
 from langchain.tools import BaseTool, tool
 
-from clai.skills import Skill
+from clai.skills.loader import Skill
 
 
 def make_load_skill(skills: dict[str, Skill]) -> BaseTool:
-    """Build the tool that hands the model a skill's full instructions."""
+    """Build the `load_skill` tool for the skills loaded at startup.
+
+    A `@tool` function only receives what the model sends, so this factory
+    captures `skills` in a closure.
+    """
 
     @tool
     def load_skill(skill_name: str) -> str:

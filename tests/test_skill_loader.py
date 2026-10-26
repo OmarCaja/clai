@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from clai.skills import BUILTIN_SKILLS_DIR, Skill, load_skills
+from clai.skills.loader import BUILTIN_SKILLS_DIR, Skill, load_skills
 
 COMMIT = """---
 name: commit

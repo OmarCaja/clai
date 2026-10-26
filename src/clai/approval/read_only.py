@@ -1,3 +1,9 @@
+"""Decide which shell commands are read-only, so they can run without asking.
+
+This is an allowlist, not a sandbox: a command is read-only only if every part of
+it is a known program that cannot write files or run other commands.
+"""
+
 import shlex
 
 READ_ONLY_PROGRAMS = {
@@ -20,7 +26,11 @@ OPERATOR_CHARS = "();<>|&"
 
 
 def is_read_only(command: str) -> bool:
-    """True if the command can run without asking the user first."""
+    """Whether `command` only reads, so it can run without asking the user first.
+
+    It must be a pipeline (`a | b`) of allowlisted programs, with no other shell
+    operators, no command substitution and no options that write or execute.
+    """
     # Command substitution: shlex keeps these inside words (e.g. in double
     # quotes), but the shell still runs what's inside.
     if "`" in command or "$(" in command:
@@ -45,6 +55,7 @@ def is_read_only(command: str) -> bool:
 
 
 def _segment_is_read_only(segment: list[str]) -> bool:
+    """Whether one part of a pipeline, as program and arguments, only reads."""
     if not segment or segment[0] not in READ_ONLY_PROGRAMS:
         return False
     if segment[0] == "git" and (len(segment) < 2 or segment[1] not in READ_ONLY_GIT):

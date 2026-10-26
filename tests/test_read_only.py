@@ -1,6 +1,6 @@
 import pytest
 
-from clai.safety import is_read_only
+from clai.approval.read_only import is_read_only
 
 
 @pytest.mark.parametrize(

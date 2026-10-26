@@ -1,5 +1,5 @@
-from clai.skills import Skill
-from clai.tools.load_skill import make_load_skill
+from clai.skills.loader import Skill
+from clai.skills.tool import make_load_skill
 
 
 def test_load_skill_returns_instructions_or_lists_names() -> None:

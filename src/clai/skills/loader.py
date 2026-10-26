@@ -1,19 +1,31 @@
+"""Find and parse `SKILL.md` files.
+
+A skill is a folder with a `SKILL.md` inside: YAML-like frontmatter with a
+`description`, then the instructions in Markdown. The folder name is the skill name.
+"""
+
 from pathlib import Path
 from typing import NamedTuple
 
-BUILTIN_SKILLS_DIR = Path(__file__).parent / "builtin_skills"
+BUILTIN_SKILLS_DIR = Path(__file__).parent / "builtin"
 USER_SKILLS_DIR = Path.home() / ".clai" / "skills"
 
 
 class Skill(NamedTuple):
+    """One skill, as the model sees it."""
+
     description: str
+    """Shown in the system prompt, so the model knows when to load the skill."""
+
     instructions: str
+    """The body of `SKILL.md`, returned by the `load_skill` tool."""
 
 
 def load_skills(*directories: Path) -> dict[str, Skill]:
     """Read every `<name>/SKILL.md` in each directory, keyed by folder name.
 
     A skill in a later directory replaces one with the same name in an earlier one.
+    Missing directories and unreadable or invalid files are skipped.
     """
     skills = {}
     for directory in directories:
@@ -29,10 +41,13 @@ def load_skills(*directories: Path) -> dict[str, Skill]:
 
 
 def parse_skill(text: str) -> Skill | None:
-    """Split a SKILL.md into its frontmatter description and its instructions."""
+    """Split a `SKILL.md` into its frontmatter description and its instructions.
+
+    Returns None if the frontmatter is missing, unclosed or has no description.
+    """
     if not text.startswith("---"):
         return None
-    frontmatter, closed, body = text[3:].partition("\n---")
+    frontmatter, closed, body = text.removeprefix("---").partition("\n---")
     if not closed:
         return None
     # ponytail: one `key: value` per line, not full YAML (no multi-line values);
