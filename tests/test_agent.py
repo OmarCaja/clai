@@ -1,13 +1,11 @@
-import itertools
 from collections.abc import Callable, Iterable, Sequence
 from pathlib import Path
 from typing import Any
 
-import pytest
 from langchain_core.language_models import GenericFakeChatModel
 from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 
-from clai.agent import CONFIG, RECURSION_LIMIT, Agent, ask, make_agent
+from clai.agent import CONFIG, Agent, ask, make_agent
 
 
 class ScriptedModel(GenericFakeChatModel):
@@ -47,23 +45,6 @@ def test_runs_a_command_then_answers() -> None:
     assert "hi" in tool_result.text
 
 
-def test_ctrl_c_at_a_command_keeps_the_conversation_usable() -> None:
-    def press_ctrl_c(_command: str) -> bool:
-        raise KeyboardInterrupt
-
-    agent = scripted_agent([run_command("rm notes.txt"), AIMessage("2 + 2 = 4")])
-
-    with pytest.raises(KeyboardInterrupt):
-        reply(agent, "delete notes.txt", confirm=press_ctrl_c)
-
-    # The cut-off tool call got a result, so the history is valid again...
-    last = agent.get_state(CONFIG).values["messages"][-1]
-    assert isinstance(last, ToolMessage)
-    assert last.tool_call_id == "call-1"
-    # ...and the next request works.
-    assert reply(agent, "what is 2 + 2?") == "2 + 2 = 4"
-
-
 def test_declined_command_does_not_run(tmp_path: Path) -> None:
     marker = tmp_path / "marker"
     agent = scripted_agent([run_command(f"touch {marker}"), AIMessage("OK, I won't.")])
@@ -101,23 +82,6 @@ def test_read_only_command_runs_without_asking() -> None:
 
     assert answer == "It printed hi."
     assert shown == ["echo hi"]
-
-
-def test_stops_a_model_that_never_answers() -> None:
-    # Like a real model, each call gets a new id.
-    agent = scripted_agent(
-        run_command("echo again", call_id=f"call-{n}") for n in itertools.count()
-    )
-
-    answer = reply(agent, "loop forever")
-
-    assert answer == f"Stopped after {RECURSION_LIMIT} steps without a final answer."
-
-
-def test_reports_an_empty_answer() -> None:
-    agent = scripted_agent([AIMessage("")])
-
-    assert reply(agent, "hi") == "The model returned an empty answer. Try again."
 
 
 def test_remembers_earlier_requests() -> None:

@@ -13,7 +13,7 @@ TRUNCATED_NOTE = "\n[output truncated]"
 def run_shell_command(command: str) -> str:
     """Run a shell command in the user's current directory and return its output."""
     # This docstring is the tool description the model reads. Approval happens
-    # before the tool runs, in the agent's review middleware (clai.approval.review).
+    # before the tool runs, in the agent's review middleware (clai.shell.middleware).
     try:
         result = subprocess.run(
             command,

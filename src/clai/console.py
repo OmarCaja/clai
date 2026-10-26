@@ -1,6 +1,5 @@
 """Everything clai shows in the terminal: answers, commands, prompts and errors."""
 
-from pydantic import ValidationError
 from rich.console import Console
 from rich.prompt import Confirm
 
@@ -20,14 +19,6 @@ def show_command(command: str, note: str = "") -> None:
 def show_error(message: str) -> None:
     """Print an error in one red line."""
     console.print(f"Error: {message}", style="bold red", markup=False)
-
-
-def summarize(error: Exception) -> str:
-    """The useful part of a library error, without its long details."""
-    if isinstance(error, ValidationError):
-        # e.g. a missing API key, reported when the chat model is created.
-        return str(error.errors()[0]["msg"]).removeprefix("Value error, ")
-    return str(error).splitlines()[0]
 
 
 # The agent reports commands mid-answer, so both callbacks below first stop
@@ -58,6 +49,6 @@ def print_answer(agent: Agent, request: str) -> bool:
         return False
     # Each provider raises its own errors; any failure ends only this request.
     except Exception as error:  # noqa: BLE001
-        show_error(f"The request failed: {summarize(error)}")
+        show_error(f"The request failed: {error}")
         return False
     return True

@@ -179,7 +179,7 @@ read when `clai` starts, and the commands they run go through the same safety ch
   execute (`find -delete`, `find -exec`, `sort -o`, `--output`).
 
 Commands also time out after 30 seconds, get no stdin, and their output is capped at 10,000 characters before it is sent
-to the model. The agent stops after 51 steps (about 25 commands) if it hasn't reached an answer.
+to the model. Press Ctrl-C to stop an agent that keeps running commands.
 
 The allowlist reduces risk; it is not a sandbox. Read every command before you approve it.
 
@@ -189,14 +189,14 @@ The allowlist reduces risk; it is not a sandbox. Read every command before you a
  you ── request ──► cli.py ──► console.py ──► agent.ask() ──► agent.stream()   (InMemorySaver keeps earlier turns)
                                                     │
                      ┌──────────────────────────────┴─────────────────────────────┐
-                     │  LangGraph loop, max 51 steps                              │
+                     │  LangGraph loop                                            │
                      │                                                            │
                      │   model ── tool call ──► HumanInTheLoopMiddleware          │
-                     │     ▲                     │ when: not is_read_only?        │
-                     │     │                     ├─ no  → run it                  │
-                     │     │                     └─ yes → interrupt ──► ask()     │
-                     │     │                               resumes with y/N       │
-                     │     └── exit code + output ── run_shell_command (tools/)   │
+                     │     ▲                     │ interrupt ──► ask(): read-only?│
+                     │     │                     ├─ yes → auto-approve            │
+                     │     │                     └─ no  → y/N                     │
+                     │     │                     resume with the decisions        │
+                     │     └── exit code + output ── run_shell_command (shell/)   │
                      └───────┬───────────────────────────────┬────────────────────┘
                              │ text chunks                   │ confirm / auto_approved (console.py)
                              ▼                               ▼
@@ -215,9 +215,9 @@ why the Markdown display is closed before each confirmation prompt and a new blo
 | `console.py`            | Terminal output: answers, commands, y/N prompt, errors.                  |
 | `render.py`             | Re-renders streamed text as Markdown while it arrives.                   |
 | `agent.py`              | Builds the agent (checkpointer, middleware), streams answers.            |
-| `tools/shell.py`        | The `run_shell_command` tool: timeout, output cap, exit code.            |
-| `approval/review.py`    | Approval middleware: when to pause, resuming with the user's answers.    |
-| `approval/read_only.py` | Decides which commands are read-only and can skip confirmation.          |
+| `shell/read_only.py`    | Decides which commands are read-only and can skip confirmation.          |
+| `shell/tool.py`         | The `run_shell_command` tool: timeout, output cap, exit code.            |
+| `shell/middleware.py`   | Approval middleware: pause before commands, resume with the decisions.   |
 | `skills/loader.py`      | Reads and parses `<name>/SKILL.md` files.                                |
 | `skills/tool.py`        | The `load_skill` tool: hands the model a skill's instructions.           |
 | `skills/middleware.py`  | `SkillMiddleware`: lists skills in the system prompt, adds `load_skill`. |
@@ -232,7 +232,7 @@ uv run pre-commit run --all-files   # run all those checks now, without committi
 
 ```bash
 uv run pytest -q                 # run the tests
-uv run pytest tests/test_read_only.py -k rm   # run a subset
+uv run pytest tests/test_shell_read_only.py -k rm   # run a subset
 uv run ruff check --fix          # lint
 uv run ruff format               # format
 uv run mypy src tests            # type-check

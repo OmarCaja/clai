@@ -20,6 +20,8 @@ def test_loads_valid_skills_and_skips_broken_ones(tmp_path: Path) -> None:
     write_skill(tmp_path, "no-frontmatter", "Just text.")
     write_skill(tmp_path, "unclosed", "---\ndescription: x\nbody")
     write_skill(tmp_path, "no-description", "---\nname: x\n---\nbody")
+    write_skill(tmp_path, "bad-yaml", "---\ndescription: [unclosed\n---\nbody")
+    write_skill(tmp_path, "not-text", "---\ndescription: 5\n---\nbody")
 
     assert load_skills(tmp_path) == {
         "commit": Skill(
@@ -45,3 +47,12 @@ def test_later_directory_replaces_skill_with_same_name(tmp_path: Path) -> None:
 
 def test_builtin_skills_parse() -> None:
     assert "commit" in load_skills(BUILTIN_SKILLS_DIR)
+
+
+def test_frontmatter_is_real_yaml(tmp_path: Path) -> None:
+    folded = "---\ndescription: >\n  Use when asked,\n  on two lines.\n---\nDo it."
+    write_skill(tmp_path, "folded", folded)
+
+    assert load_skills(tmp_path) == {
+        "folded": Skill("Use when asked, on two lines.", "Do it.")
+    }

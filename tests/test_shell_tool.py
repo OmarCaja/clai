@@ -1,5 +1,5 @@
-from clai.tools.shell import MAX_OUTPUT_CHARS, TRUNCATED_NOTE
-from clai.tools.shell import run_shell_command as run_shell
+from clai.shell.tool import MAX_OUTPUT_CHARS, TRUNCATED_NOTE
+from clai.shell.tool import run_shell_command as run_shell
 
 
 def test_runs_command() -> None:

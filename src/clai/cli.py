@@ -7,7 +7,7 @@ from importlib.metadata import version
 
 from clai.agent import make_agent
 from clai.chat import EXIT_COMMAND, chat
-from clai.console import print_answer, show_error, summarize
+from clai.console import print_answer, show_error
 
 DEFAULT_MODEL = "google_genai:gemini-2.5-flash-lite"
 
@@ -19,7 +19,7 @@ def main() -> None:
         agent = make_agent(args.model)
     # Unknown provider, missing API key, missing package: each raises differently.
     except Exception as error:  # noqa: BLE001
-        show_error(f"Could not load model '{args.model}': {summarize(error)}")
+        show_error(f"Could not load model '{args.model}': {error}")
         sys.exit(1)
 
     request = " ".join(args.request)
