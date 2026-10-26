@@ -16,7 +16,9 @@ Never edit files yourself: your job is only to commit what is there.
 
 ## 2. Read the changes
 
-`git diff --staged -- . ':(exclude)*.lock'`. This shows every staged change, new files included.
+`git diff --staged -- . ':(exclude)*.lock' ':(exclude)*package-lock.json' ':(exclude)*pnpm-lock.yaml' ':(exclude)*go.sum'`
+
+This shows every staged change, new files included, except dependency lock files of any language (`uv.lock`, `Cargo.lock`, `yarn.lock`, `package-lock.json`, `go.sum`, ...). They are generated and can be huge, so they would push the real changes out of the output. You still see them in `git status`; a lock file change only matters in the message as part of a dependency change.
 
 ## 3. Learn the project's commit style
 
@@ -29,18 +31,21 @@ If there are no commits, use a short imperative subject.
 
 ## 4. Write the message and commit
 
-    [OC] - Add skill support with load_skill tool and middleware
+Write your own message from the diff you read in step 2. The shape is:
 
-    - Load skills from ~/.clai/skills/<name>/SKILL.md at startup
-    - List skill descriptions in the system prompt via SkillMiddleware
-    - Raise RECURSION_LIMIT to 51 so longer skills can finish
+    <prefix from git log><what the change does>
+
+    - <first meaningful change>
+    - <second meaningful change>
+
+Everything in `<...>` is a placeholder: replace it, and never copy example text into a commit.
 
 - **Subject**: one line, at most 72 characters, in the project's style. It says what the change does, not which files it touched. No period at the end.
 - **Body**: 2 to 5 bullets starting with `- `, each at most 72 characters. Each bullet is one meaningful change and, when it isn't obvious, why. Skip trivia such as formatting, imports or lock file updates.
 
 Commit with exactly two `-m` flags: the subject in double quotes, then all the bullets in one `$'...'` string with `\n` between them. `$'...'` turns each `\n` into a real newline.
 
-    git commit -m "[OC] - Add skill support" -m $'- Load skills from ~/.clai/skills\n- List skill descriptions in the system prompt'
+    git commit -m "<subject>" -m $'- <first change>\n- <second change>'
 
 Never run `git commit` without `-m`: Git would open an editor, which hangs here. Inside the message, never use backticks, `$(`, single quotes (`'`) or backslashes other than `\n`.
 

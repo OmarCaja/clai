@@ -18,6 +18,8 @@ from clai.approval.read_only import is_read_only
         "git log -3",
         "git diff HEAD~1",
         "git show HEAD",
+        # the commit skill's diff, which must not need confirmation
+        "git diff --staged -- . ':(exclude)*.lock' ':(exclude)*package-lock.json'",
         # pipes are fine when every part is read-only
         "git log --oneline | head -n 5",
         "cat README.md|wc -l",
